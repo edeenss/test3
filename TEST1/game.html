@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Knight’s Tour (Undo + Hint + Save)</title>
+    <style>
+      body {
+        background: #222;
+        color: #fff;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+      .controls {
+        margin-bottom: 20px;
+      }
+      #board {
+        display: grid;
+        gap: 2px;
+      }
+      .cell {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .light {
+        background-color: #eee;
+        color: #000;
+      }
+      .dark {
+        background-color: #555;
+        color: #fff;
+      }
+      .visited {
+        background-color: #009688 !important;
+        color: #fff;
+      }
+      .knight {
+        background-color: gold !important;
+        color: black;
+      }
+      .invalid {
+        pointer-events: none;
+        opacity: 0.4;
+      }
+      .valid-move {
+        outline: 2px solid red;
+      }
+      .hint {
+        background-color: orange !important;
+        color: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>기사의 여행</h1>
+    <div class="controls">
+      <label
+        >판 크기:
+        <select id="sizeSelector">
+          <option value="5">5x5</option>
+          <option value="6">6x6</option>
+        </select>
+      </label>
+      <button onclick="resetBoard()">초기화</button>
+      <button onclick="undoMove()">되돌리기</button>
+      <button onclick="showHint()">정답 힌트</button>
+      <button onclick="saveGame()">저장</button>
+      <button onclick="clearSave()">저장 초기화</button>
+      <span id="status">이동 수: 0</span>
+    </div>
+    <div id="board"></div>
+    <script>
+      let boardSize = 5;
+      let moveCount = 0;
+      let knightPos = null;
+      let visited = [];
+      let moveHistory = [];
+      const knightMoves = [
+        [2, 1],
+        [1, 2],
+        [-1, 2],
+        [-2, 1],
+        [-2, -1],
+        [-1, -2],
+        [1, -2],
+        [2, -1],
+      ];
+
+      function saveGame() {
+        const save = {
+          boardSize,
+          moveCount,
+          knightPos,
+          visited,
+          moveHistory,
+        };
+        localStorage.setItem('knightState', JSON.stringify(save));
+        alert('게임이 저장되었습니다.');
+      }
+
+      function loadGame() {
+        const saved = JSON.parse(localStorage.getItem('knightState'));
+        if (!saved) return;
+        boardSize = saved.boardSize;
+        moveCount = saved.moveCount;
+        knightPos = saved.knightPos;
+        visited = saved.visited;
+        moveHistory = saved.moveHistory;
+      }
+
+      function clearSave() {
+        localStorage.removeItem('knightState');
+        alert('저장된 게임이 삭제되었습니다.');
+      }
+
+      document
+        .getElementById('sizeSelector')
+        .addEventListener('change', (e) => {
+          boardSize = parseInt(e.target.value);
+          resetBoard();
+        });
+
+      function resetBoard() {
+        moveCount = 0;
+        knightPos = null;
+        visited = Array.from({ length: boardSize }, () =>
+          Array(boardSize).fill(false)
+        );
+        moveHistory = [];
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+        board.style.gridTemplateColumns = `repeat(${boardSize}, 60px)`;
+        for (let y = 0; y < boardSize; y++) {
+          for (let x = 0; x < boardSize; x++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell', (x + y) % 2 === 0 ? 'light' : 'dark');
+            cell.dataset.x = x;
+            cell.dataset.y = y;
+            cell.addEventListener('click', () => handleClick(x, y));
+            board.appendChild(cell);
+          }
+        }
+        updateBoard();
+      }
+
+      function handleClick(x, y) {
+        if (knightPos === null || isValidMove(x, y)) {
+          if (knightPos) moveHistory.push({ ...knightPos });
+          moveCount++;
+          visited[y][x] = true;
+          knightPos = { x, y };
+          updateBoard();
+          if (isGameComplete())
+            setTimeout(() => alert('🎉 나이트 투어 완료!'), 100);
+          else if (!hasMoreMoves())
+            setTimeout(() => alert('❌ 이동할 곳이 없습니다.'), 100);
+        }
+      }
+
+      function undoMove() {
+        if (!knightPos || moveCount === 0) return;
+        visited[knightPos.y][knightPos.x] = false;
+        knightPos = moveHistory.pop() || null;
+        moveCount--;
+        updateBoard();
+      }
+
+      function isValidMove(x, y) {
+        if (!knightPos || visited[y][x]) return false;
+        return knightMoves.some(
+          ([dx, dy]) => knightPos.x + dx === x && knightPos.y + dy === y
+        );
+      }
+
+      function updateBoard() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach((cell) => {
+          const x = parseInt(cell.dataset.x);
+          const y = parseInt(cell.dataset.y);
+          cell.classList.remove(
+            'knight',
+            'visited',
+            'invalid',
+            'valid-move',
+            'hint'
+          );
+          cell.textContent = '';
+          if (visited[y][x]) {
+            cell.classList.add('visited');
+            cell.textContent = getVisitOrder(x, y);
+          }
+          if (knightPos && x === knightPos.x && y === knightPos.y) {
+            cell.classList.add('knight');
+            cell.textContent = '♞';
+          }
+          if (knightPos && isValidMove(x, y)) cell.classList.add('valid-move');
+          if (
+            knightPos &&
+            !isValidMove(x, y) &&
+            !(x === knightPos.x && y === knightPos.y)
+          ) {
+            cell.classList.add('invalid');
+          }
+        });
+        document.getElementById('status').textContent = `이동 수: ${moveCount}`;
+      }
+
+      function getVisitOrder(x, y) {
+        let count = 0;
+        for (let i = 0; i < boardSize; i++) {
+          for (let j = 0; j < boardSize; j++) {
+            if (visited[j][i]) count++;
+            if (i === x && j === y) return count;
+          }
+        }
+        return '';
+      }
+
+      function isGameComplete() {
+        return visited.flat().every((v) => v);
+      }
+
+      function hasMoreMoves() {
+        if (!knightPos) return true;
+        return knightMoves.some(([dx, dy]) => {
+          const nx = knightPos.x + dx;
+          const ny = knightPos.y + dy;
+          return (
+            nx >= 0 &&
+            ny >= 0 &&
+            nx < boardSize &&
+            ny < boardSize &&
+            !visited[ny][nx]
+          );
+        });
+      }
+
+      function showHint() {
+        const hintPath = findTourPath(
+          knightPos || { x: 0, y: 0 },
+          visited.map((row) => row.slice()),
+          []
+        );
+        if (!hintPath || hintPath.length === 0) {
+          alert('정답 경로를 찾을 수 없습니다.');
+          return;
+        }
+        const cells = document.querySelectorAll('.cell');
+        hintPath.forEach((pos, i) => {
+          const cell = [...cells].find(
+            (c) => +c.dataset.x === pos.x && +c.dataset.y === pos.y
+          );
+          if (cell) {
+            cell.classList.add('hint');
+            cell.textContent = i + 1;
+          }
+        });
+      }
+
+      function findTourPath(pos, visitedMap, path) {
+        const { x, y } = pos;
+        visitedMap[y][x] = true;
+        path.push({ x, y });
+        if (path.length === boardSize * boardSize) return path;
+        const nextMoves = knightMoves
+          .map(([dx, dy]) => ({ x: x + dx, y: y + dy }))
+          .filter(
+            ({ x, y }) =>
+              x >= 0 &&
+              y >= 0 &&
+              x < boardSize &&
+              y < boardSize &&
+              !visitedMap[y][x]
+          )
+          .map((pos) => ({
+            ...pos,
+            degree: knightMoves.filter(([dx, dy]) => {
+              const nx = pos.x + dx,
+                ny = pos.y + dy;
+              return (
+                nx >= 0 &&
+                ny >= 0 &&
+                nx < boardSize &&
+                ny < boardSize &&
+                !visitedMap[ny][nx]
+              );
+            }).length,
+          }))
+          .sort((a, b) => a.degree - b.degree);
+        for (const next of nextMoves) {
+          const result = findTourPath(
+            next,
+            visitedMap.map((row) => row.slice()),
+            path.slice()
+          );
+          if (result) return result;
+        }
+        return null;
+      }
+
+      loadGame();
+      resetBoard();
+    </script>
+  </body>
+</html>

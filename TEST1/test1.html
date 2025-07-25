@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>축구 선수 등록</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #f7f7f7;
+        margin: 0;
+        padding: 0;
+      }
+      h1 {
+        text-align: center;
+        margin-top: 30px;
+        color: #222;
+      }
+      form {
+        background: #fff;
+        max-width: 600px;
+        margin: 30px auto 20px auto;
+        padding: 20px 30px 15px 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 20px;
+        align-items: center;
+        justify-content: center;
+      }
+      label {
+        flex: 1 1 180px;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        color: #333;
+      }
+      input[type='text'],
+      input[type='number'] {
+        padding: 7px 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 15px;
+        margin-top: 3px;
+        background: #fafbfc;
+        transition: border 0.2s;
+      }
+      input[type='text']:focus,
+      input[type='number']:focus {
+        border: 1.5px solid #007bff;
+        outline: none;
+        background: #fff;
+      }
+      button[type='submit'] {
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 22px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: background 0.2s;
+      }
+      button[type='submit']:hover {
+        background: #0056b3;
+      }
+      #player-list {
+        max-width: 600px;
+        margin: 0 auto 40px auto;
+      }
+      .accordion {
+        width: 100%;
+        text-align: left;
+        background: #fff;
+        color: #222;
+        cursor: pointer;
+        padding: 14px 18px;
+        border: none;
+        border-radius: 7px 7px 0 0;
+        outline: none;
+        font-size: 17px;
+        font-weight: 500;
+        margin-top: 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        transition: background 0.2s;
+      }
+      .accordion:hover {
+        background: #e9f2ff;
+      }
+      .panel {
+        background: #f4f8fb;
+        border-radius: 0 0 7px 7px;
+        margin-bottom: 10px;
+        padding: 18px 20px 10px 20px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        display: none;
+        animation: fadeIn 0.3s;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .panel div {
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+      .panel input[type='text'],
+      .panel input[type='number'] {
+        width: 60%;
+        margin-left: 10px;
+        font-size: 15px;
+        padding: 5px 8px;
+      }
+      .panel button {
+        background: #28a745;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 7px 15px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-right: 7px;
+        margin-top: 5px;
+        transition: background 0.2s;
+      }
+      .panel button:hover {
+        background: #218838;
+      }
+      .panel button:last-child {
+        background: #dc3545;
+      }
+      .panel button:last-child:hover {
+        background: #b52a37;
+      }
+      /* 모달 스타일 - 축구판 배경만(심플) */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background: #fff;
+        border-radius: 15px;
+        padding: 18px 10px 10px 10px;
+        min-width: 740px;
+        min-height: 440px;
+        max-width: 900px;
+        max-height: 600px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .close {
+        position: absolute;
+        right: 18px;
+        top: 10px;
+        font-size: 28px;
+        color: #888;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 10;
+      }
+      .soccer-field {
+        position: relative;
+        width: 700px;
+        height: 400px;
+        background: linear-gradient(90deg, #4caf50 80%, #388e3c 100%);
+        border-radius: 28px;
+        border: 4px solid #fff;
+        margin-top: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+      .gk-area,
+      .df-area,
+      .mf-area,
+      .fw-area {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+      }
+      .gk-area {
+        top: 325px;
+        height: 40px;
+      }
+      .df-area {
+        top: 240px;
+        height: 40px;
+      }
+      .mf-area {
+        top: 140px;
+        height: 40px;
+      }
+      .fw-area {
+        top: 50px;
+        height: 40px;
+      }
+      .player-chip {
+        font-weight: 500;
+        font-size: 12px;
+        color: #fff;
+        text-shadow: 0 1px 2px #222;
+        padding: 3px 10px;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #1976d2 60%, #64b5f6 100%);
+        border: 1.5px solid #fff;
+        background-clip: padding-box;
+        margin-bottom: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: background 0.2s;
+        min-width: 28px;
+        max-width: 60px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .df-area .player-chip {
+        background: linear-gradient(135deg, #388e3c 60%, #81c784 100%);
+      }
+      .mf-area .player-chip {
+        background: linear-gradient(135deg, #fbc02d 60%, #fff176 100%);
+        color: #333;
+      }
+      .fw-area .player-chip {
+        background: linear-gradient(135deg, #d32f2f 60%, #ff8a65 100%);
+      }
+      @media (max-width: 900px) {
+        .modal-content {
+          min-width: 98vw;
+          max-width: 98vw;
+        }
+        .soccer-field {
+          width: 98vw;
+          min-width: 0;
+          height: 50vw;
+          min-height: 0;
+        }
+      }
+      /* 유튜브 플레이어 영역 */
+      #youtube-area {
+        width: 100%;
+        text-align: center;
+        margin: 0 0 20px 0;
+      }
+      #youtube-player {
+        display: none;
+        margin: 0 auto;
+      }
+      #youtube-btn {
+        background: #ff1744;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 22px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-bottom: 10px;
+        transition: background 0.2s;
+      }
+      #youtube-btn:hover {
+        background: #d50000;
+      }
+      .yt-arrow {
+        font-size: 28px;
+        background: none;
+        border: none;
+        color: #444;
+        cursor: pointer;
+        vertical-align: middle;
+        margin: 0 10px;
+        transition: color 0.2s;
+      }
+      .yt-arrow:hover {
+        color: #ff1744;
+      }
+
+      .yt-arrow {
+        font-size: 32px;
+        background: linear-gradient(135deg, #fff 60%, #ff1744 100%);
+        border: 2px solid #ff1744;
+        border-radius: 50%;
+        color: #ff1744;
+        cursor: pointer;
+        width: 48px;
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 18px;
+        box-shadow: 0 2px 8px rgba(255, 23, 68, 0.08);
+        transition: background 0.2s, color 0.2s, transform 0.15s;
+        outline: none;
+      }
+      .yt-arrow:hover {
+        background: #ff1744;
+        color: #fff;
+        transform: scale(1.12) rotate(-8deg);
+        border-color: #d50000;
+        box-shadow: 0 4px 16px rgba(255, 23, 68, 0.18);
+      }
+      body.dark-mode {
+        background: #181818;
+        color: #eee;
+      }
+      body.dark-mode form,
+      body.dark-mode .accordion,
+      body.dark-mode .panel,
+      body.dark-mode .modal-content,
+      body.dark-mode #youtube-area,
+      body.dark-mode #player-list {
+        background: #23272b !important;
+        color: #eee !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+      }
+      body.dark-mode input,
+      body.dark-mode input:focus {
+        background: #222 !important;
+        color: #fff !important;
+        border: 1.5px solid #444 !important;
+      }
+      body.dark-mode button,
+      body.dark-mode .yt-arrow {
+        background: #333 !important;
+        color: #fff !important;
+        border-color: #555 !important;
+      }
+      body.dark-mode .yt-arrow:hover {
+        background: #ff1744 !important;
+        color: #fff !important;
+      }
+      body.dark-mode .soccer-field {
+        background: linear-gradient(90deg, #222 80%, #333 100%) !important;
+        border-color: #444 !important;
+      }
+      body.dark-mode .player-chip {
+        background: linear-gradient(135deg, #444 60%, #888 100%) !important;
+        color: #fff !important;
+        border-color: #222 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>축구 선수 등록</h1>
+    <form id="player-form" onsubmit="insert(); return false;">
+      <label>이름: <input id="name" required /></label>
+      <label>팀: <input id="team" required /></label>
+      <label
+        >포지션: <input id="position" required placeholder="예: GK, DF, MF, FW"
+      /></label>
+      <label>나이: <input id="age" type="number" required /></label>
+      <button type="submit">등록</button>
+    </form>
+
+    <div id="player-list"></div>
+    <!-- 포지션 모달 -->
+    <div id="position-modal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closePositionModal()">&times;</span>
+        <div class="soccer-field">
+          <div id="modal-fw" class="fw-area"></div>
+          <div id="modal-mf" class="mf-area"></div>
+          <div id="modal-df" class="df-area"></div>
+          <div id="modal-gk" class="gk-area"></div>
+        </div>
+      </div>
+    </div>
+    <div id="youtube-area">
+      <button id="youtube-btn" onclick="showYoutubePlayer()">
+        축구도파민,축구뽕 채워지는 영상
+      </button>
+      <div id="youtube-player">
+        <button class="yt-arrow" onclick="prevSong()">&#8592;</button>
+        <iframe
+          id="yt-iframe"
+          width="650"
+          height="450"
+          src="https://www.youtube.com/embed/B0cUafg_FZU?autoplay=1"
+          frameborder="0"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+        <button class="yt-arrow" onclick="nextSong()">&#8594;</button>
+      </div>
+    </div>
+    <div style="text-align: center; margin: 20px 0">
+      <button
+        id="test1-btn"
+        onclick="window.location.href='game.html';"
+        style="
+          padding: 12px 32px;
+          font-size: 18px;
+          background: #1976d2;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+        "
+      >
+        게임하기
+      </button>
+    </div>
+    <script src="test.js"></script>
+    <script>
+      // 유튜브 영상 ID 배열 (이미 있다면 아래처럼 추가)
+      const songIds = [
+        'B0cUafg_FZU', // 첫 번째 곡
+        'ZK5XIY2AZU0', // 두 번째 곡 (추가된 곡)
+        '0wa4XwWylsc',
+        'ZpdJDt32VAk',
+        'eS0YpiPhnpo',
+      ];
+      let currentSong = 0;
+
+      function showYoutubePlayer() {
+        document.getElementById('youtube-player').style.display = 'block';
+        document.getElementById('youtube-btn').style.display = 'none';
+        setSong(currentSong);
+      }
+      function setSong(idx) {
+        const iframe = document.getElementById('yt-iframe');
+        iframe.src = `https://www.youtube.com/embed/${songIds[idx]}?autoplay=1`;
+      }
+      function prevSong() {
+        currentSong = (currentSong - 1 + songIds.length) % songIds.length;
+        setSong(currentSong);
+      }
+      function nextSong() {
+        currentSong = (currentSong + 1) % songIds.length;
+        setSong(currentSong);
+      }
+      document.getElementById('theme-toggle').onclick = function () {
+        const body = document.body;
+        body.classList.toggle('dark-mode');
+        this.textContent = body.classList.contains('dark-mode')
+          ? '라이트모드'
+          : '다크모드';
+      };
+    </script>
+  </body>
+</html>
